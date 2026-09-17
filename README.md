@@ -8,6 +8,9 @@
 
 ## Changelog
 
+2026-09-17:
+- Fix typo and broken link in step 3
+
 2026-09-16:
 - Initial project release
 
@@ -122,7 +125,7 @@ Hamming distance based on your new coding.
 ### Step 3: Packed representations
 
 At least in principle, we can use ["bit-twiddling hacks"][hacks]
-to for [SIMD within a register (SWAR)][swar] computations of things
+for [SIMD within a register (SWAR)][swar] computations of things
 like letter-by-letter Hamming distances.  One such scheme goes as
 follows:
 
@@ -149,7 +152,7 @@ improve performance.  Sometimes this works; sometimes the intuition is
 misguided.  What do you see?  Is your version any faster than the
 method you explored in Step 2?
 
-[twiddle]: https://graphics.stanford.edu/~seander/bithacks.html
+[hacks]: https://graphics.stanford.edu/~seander/bithacks.html
 [swar]: https://en.wikipedia.org/wiki/SWAR
 
 ### Step 4: Speed demon!
