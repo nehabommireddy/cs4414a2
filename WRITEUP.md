@@ -8,10 +8,24 @@ You should complete the following questions in your final submission:
    run the code in the `debug` compilation mode?  What about the
    `release` mode?
 
+Using the naive implementation, the computation time for `popular.txt` was:
+Debug: 254.4000348 seconds
+Release: 9.9045655 seconds
+
 2. Based on the relative sizes of the dictionaries, estimate how long
    you think it would take to run in the two modes for the
    `examples/enable1.txt` dictionary.  Test your hypothesis in release
    mode; how long does it actually take to run?
+
+The `popular.txt` dictionary contains 25,322 words, while `enable1.txt` contains 172,823 words. The ratio of the dictionary sizes is: 172,823 / 25,322 ≈ 6.83. Since the program compares pairs of words, the amount of computation grows approximately quadratically with the number of words. Therefore, I estimated the runtime ratio as: 6.83² ≈ 46.7.
+
+Based on the `popular.txt` runtimes, my estimated runtimes for `enable1.txt` were:
+
+- Estimated debug runtime: 11,879 seconds
+- Estimated release runtime: 462.5 seconds
+
+- Actual release runtime: 659.4675116 seconds
+
 
 ## Step 1: Blocking
 
@@ -19,6 +33,20 @@ You should complete the following questions in your final submission:
    (`popular.txt` and `enable1.txt`)?  Include the storage for the
    `String` metadata in your accounting (don't worry about storage for
    the allocator's data structures).
+
+A Rust `String` contains 24 bytes of metadata on a 64-bit system: 8 bytes for the pointer, 8 bytes for the length, and 8 bytes for the capacity. Since the dictionary contains ASCII characters, each character requires 1 byte.
+
+For `popular.txt`:
+- Number of strings: 25,322
+- Character storage: 185,196 bytes
+- String metadata: 25,322 × 24 = 607,728 bytes
+- Total estimated memory footprint: 792,924 bytes
+
+For `enable1.txt`:
+- Number of strings: 172,823
+- Character storage: 1,570,540 bytes
+- String metadata: 172,823 × 24 = 4,147,752 bytes
+- Total estimated memory footprint: 5,718,292 bytes
 
 2. Complete the code for the blocked variant.  You should see a speed
    difference that is noticeable, but not enormous.  What difference
