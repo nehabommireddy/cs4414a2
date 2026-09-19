@@ -9,8 +9,8 @@ You should complete the following questions in your final submission:
    `release` mode?
 
 Using the naive implementation, the computation time for `popular.txt` was:
-Debug: 254.4000348 seconds
-Release: 9.9045655 seconds
+Debug: 114.414381375 seconds
+Release: 3.60047075 seconds
 
 2. Based on the relative sizes of the dictionaries, estimate how long
    you think it would take to run in the two modes for the
@@ -21,10 +21,9 @@ The `popular.txt` dictionary contains 25,322 words, while `enable1.txt` contains
 
 Based on the `popular.txt` runtimes, my estimated runtimes for `enable1.txt` were:
 
-- Estimated debug runtime: 11,879 seconds
-- Estimated release runtime: 462.5 seconds
-
-- Actual release runtime: 659.4675116 seconds
+- Estimated debug runtime: 5,343.4 seconds
+- Estimated release runtime: 168.1 seconds
+- Actual release runtime: 191.476656334 seconds
 
 
 ## Step 1: Blocking
@@ -51,6 +50,12 @@ For `enable1.txt`:
 2. Complete the code for the blocked variant.  You should see a speed
    difference that is noticeable, but not enormous.  What difference
    do you see?
+
+   Using the blocked implementation (BSIZE = 500) on `popular.txt` in release mode:
+   Naive:   3.60047075 seconds
+   Blocked: 3.134490709 seconds
+
+   This is about a 13% speedup. Blocking helps because it keeps a small part of the dictionary in the cache while it is being reused, instead of going through the entire array each time. The improvement is not huge because blocking only changes the order we access the `String` data. Each `dist()` call still has to follow a pointer to find the actual characters stored elsewhere in memory where blocking does not make those characters stored closer together.
 
 ## Step 2: Removing indirection
 
