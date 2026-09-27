@@ -83,7 +83,11 @@ pub mod basic_word {
     impl Word {
         /// Create a Word from a string
         pub fn new(s: &str) -> Self {
-            todo!()
+            let mut word = [0u8; WSIZE];
+            for (i, &byte) in s.as_bytes().iter().enumerate() {
+                word[i] = byte;
+            }
+            Word(word)
         }
     }
 
@@ -93,14 +97,33 @@ pub mod basic_word {
     }
 
     /// Compute the Hamming distance between two Words
-    fn dist(w1: &Word, w2: &Word) -> isize {
-        // You may change the output type
-        todo!()
+    fn dist(w1: &Word, w2: &Word) -> usize {
+        let mut distance = 0;
+
+        for i in 0..WSIZE {
+            if w1.0[i] != w2.0[i] {
+                distance += 1;
+            }
+        }
+        distance
     }
 
     /// Compute vector of mean distances for all words (pre-packed)
     pub fn mean_dists(dict: &[Word]) -> Vec<f64> {
-        todo!()
+        let mut means = Vec::new();
+
+        for i in 0..dict.len() {
+            let mut total = 0;
+
+            for j in 0..dict.len() {
+                total += dist(&dict[i], &dict[j]);
+            }
+
+            let mean = total as f64 / dict.len() as f64;
+            means.push(mean);
+        }
+
+        means
     }
 
     /// Compute vector of mean distances for all words    
