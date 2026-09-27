@@ -87,6 +87,7 @@ pub mod basic_word {
             for (i, &byte) in s.as_bytes().iter().enumerate() {
                 word[i] = byte;
             }
+            Word(word)
         }
     }
 
@@ -97,7 +98,7 @@ pub mod basic_word {
 
     /// Compute the Hamming distance between two Words
     fn dist(w1: &Word, w2: &Word) -> usize {
-        let mut distance = 0
+        let mut distance = 0;
 
         for i in 0..WSIZE {
             if w1.0[i] != w2.0[i] {
