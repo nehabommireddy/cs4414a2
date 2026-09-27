@@ -41,12 +41,30 @@ pub mod block_str {
     /// Compute vector of mean distances for all strings (you may change
     /// the interface if you want)
     fn block_updates(d1: &[String], d2: &[String], counts: &mut [isize]) {
-        todo!()
+        for i in 0..d1.len() {
+            for j in 0..d2.len() {
+                counts[i] += dist(&d1[i], &d2[j]);
+            }
+        }
     }
 
     /// Blocked computation
     pub fn mean_dists(dict: &[String]) -> Vec<f64> {
-        todo!();
+        let n = dict.len();
+        let mut counts: Vec<isize> = vec![0; n];
+        
+        // split the dictionary into chunks of size BSIZE and compare
+        // block against block instead of word against word, so each
+        // chunk stays in cache while it's being reused across comparisons
+        for i_start in (0..n).step_by(BSIZE) {
+            let i_end = (i_start + BSIZE).min(n);
+            for j_start in (0..n).step_by(BSIZE) {
+                let j_end = (j_start + BSIZE).min(n);
+                block_updates(&dict[i_start..i_end], &dict[j_start..j_end], &mut counts[i_start..i_end]);
+            }
+        }
+
+        counts.iter().map(|d| *d as f64 / n as f64).collect()
     }
 
     pub fn mean_dists_dict(dict: &[String]) -> Vec<f64> {
