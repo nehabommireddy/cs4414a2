@@ -99,7 +99,7 @@ pub mod basic_word {
     }
 
     /// Compute the Hamming distance between two Words
-    fn dist(w1: &Word, w2: &Word) -> usize {
+    fn dist(w1: &Word, w2: &Word) -> isize {
         let len1 = w1.0[0] as usize;
         let len2 = w2.0[0] as usize;
 
