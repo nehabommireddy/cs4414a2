@@ -9,8 +9,8 @@ You should complete the following questions in your final submission:
    `release` mode?
 
 Using the naive implementation, the computation time for `popular.txt` was:
-Debug: 114.414381375 seconds
-Release: 3.60047075 seconds
+Debug: 97.746620311 seconds
+Release: 4.13882222 seconds
 
 2. Based on the relative sizes of the dictionaries, estimate how long
    you think it would take to run in the two modes for the
@@ -21,9 +21,9 @@ The `popular.txt` dictionary contains 25,322 words, while `enable1.txt` contains
 
 Based on the `popular.txt` runtimes, my estimated runtimes for `enable1.txt` were:
 
-- Estimated debug runtime: 5,343.4 seconds
-- Estimated release runtime: 168.1 seconds
-- Actual release runtime: 191.476656334 seconds
+- Estimated debug runtime: 97.746620311 × 46.7 ≈ 4,565.2 seconds
+- Estimated release runtime: 4.13882222 × 46.7 ≈ 193.3 seconds
+- Actual release runtime: 215.616952767 seconds
 
 
 ## Step 1: Blocking
@@ -52,19 +52,22 @@ For `enable1.txt`:
    do you see?
 
    Using the blocked implementation (BSIZE = 500) on `popular.txt` in release mode:
-   Naive:   3.60047075 seconds
-   Blocked: 3.134490709 seconds
+   Naive:   214.525513361 seconds
+   Blocked: 149.200662908 seconds
 
-   This is about a 13% speedup. Blocking helps because it keeps a small part of the dictionary in the cache while it is being reused, instead of going through the entire array each time. The improvement is not huge because blocking only changes the order we access the `String` data. Each `dist()` call still has to follow a pointer to find the actual characters stored elsewhere in memory where blocking does not make those characters stored closer together.
+   This is about a 30% speedup. Blocking helps because it keeps a small part of the dictionary in the cache while it is being reused, instead of going through the entire array each time. The improvement is not huge because blocking only changes the order we access the `String` data. Each `dist()` call still has to follow a pointer to find the actual characters stored elsewhere in memory where blocking does not make those characters stored closer together.
 
 ## Step 2: Removing indirection
 
 1. What is the speed difference compared to the method in step 2?
 
+Step 2 was faster than Step 1 on both dictionaries. For `popular.txt`, the runtime decreased from 2.63 seconds to 1.00 second, giving a 2.63× speedup (61.92% faster). For `enable1.txt`, the runtime decreased from 149.56 seconds to 46.33 seconds, giving a 3.23× speedup (69.02% faster).
+
 2. The longest word in `enable1.txt` is 28 characters, but most are
    shorter.  If you write your code to reserve one byte for the word
    length at the beginning, what type of performance improvement do
    you see?
+Reserving one byte for the word length did not improve performance in our implementation. For popular.txt, the runtime increased from 1.00 seconds to 3.62 seconds, making it about 3.61× slower. For enable1.txt, the runtime increased from 46.33 seconds to 181.57 seconds, making it about 3.92× slower. Thus, the length byte resulted in a performance decrease rather than an improvement.
 
 ## Step 3: Packed representation
 

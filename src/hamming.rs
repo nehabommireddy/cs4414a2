@@ -149,19 +149,50 @@ pub mod swar_word {
     impl Word {
         /// Create packed word
         pub fn new(s: &str) -> Self {
-            todo!()
+            let mut word = [0u32; 6];
+
+            for (i, &byte) in s.as_bytes().iter().enumerate() {
+                let value = (byte - b'a' + 1) as u32;
+
+                let word_index = i / 5;
+                let bit_offset = (i % 5) * 6;
+
+                word[word_index] |= value << bit_offset;
+            }
+
+            Self(word)
         }
     }
 
     /// Compute the Hamming distance between two Words
     fn dist(w1: &Word, w2: &Word) -> isize {
-        // You may change the signature
-        todo!()
+        let mut distance = 0;
+
+        for i in 0..6 {
+            let x = w1.0[i] ^ w2.0[i];
+            let y = x.wrapping_add(0x1F7DF7DF);
+            let mask = y & 0x20820820;
+            distance += mask.count_ones() as isize;
+        }
+
+        distance
     }
 
     /// Compute vector of mean distances for all words (pre-packed)
     pub fn mean_dists(dict: &[Word]) -> Vec<f64> {
-        todo!()
+        let mut means = Vec::with_capacity(dict.len());
+
+        for i in 0..dict.len() {
+            let mut total = 0;
+
+            for j in 0..dict.len() {
+                total += dist(&dict[i], &dict[j]);
+            }
+
+            means.push(total as f64 / dict.len() as f64);
+        }
+
+        means
     }
 
     /// Re-pack the dictionary in more condensed form
