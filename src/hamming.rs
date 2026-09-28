@@ -75,7 +75,7 @@ pub mod block_str {
 /// Step 2: Removing indirection
 pub mod basic_word {
 
-    const WSIZE: usize = 28; // You may want to fiddle with this
+    const WSIZE: usize = 29; // You may want to fiddle with this
 
     /// Word storage
     pub struct Word([u8; WSIZE]);
@@ -84,9 +84,11 @@ pub mod basic_word {
         /// Create a Word from a string
         pub fn new(s: &str) -> Self {
             let mut word = [0u8; WSIZE];
+            word[0] = s.len() as u8;
             for (i, &byte) in s.as_bytes().iter().enumerate() {
-                word[i] = byte;
+                word[i + 1] = byte;
             }
+
             Word(word)
         }
     }
@@ -98,14 +100,19 @@ pub mod basic_word {
 
     /// Compute the Hamming distance between two Words
     fn dist(w1: &Word, w2: &Word) -> usize {
+        let len1 = w1.0[0] as usize;
+        let len2 = w2.0[0] as usize;
+
+        let min_len = len1.min(len2);
         let mut distance = 0;
 
-        for i in 0..WSIZE {
-            if w1.0[i] != w2.0[i] {
+        for i in 0..min_len {
+            if w1.0[i + 1] != w2.0[i + 1] {
                 distance += 1;
             }
         }
-        distance
+
+        distance + len1.abs_diff(len2) as isize
     }
 
     /// Compute vector of mean distances for all words (pre-packed)
