@@ -209,8 +209,128 @@ pub mod swar_word {
 /// Step 4: Optimized version!
 pub mod optimized {
 
+    const fn build_add_const() -> u64 {
+        let mut result: u64 = 0;
+        let mut i = 0;
+        while i < 10 {
+            result |= 0b011111u64 << (6 * i);
+            i += 1;
+        }
+        result
+    }
+
+    const fn build_mask_const() -> u64 {
+        let mut result: u64 = 0;
+        let mut i = 0;
+        while i < 10 {
+            result |= 0b100000u64 << (6 * i);
+            i += 1;
+        }
+        result
+    }
+
+    const ADD_CONST: u64 = build_add_const();
+    const MASK_CONST: u64 = build_mask_const();
+
+    // Pack 10 characters per u64 (6 bits each: 5-bit value + 1 carry bit),
+    // so a 28-character word needs only 3 u64s instead of 6 u32s.
+    struct Word([u64; 3]);
+
+    impl Word {
+        fn new(s: &str) -> Self {
+            let mut word = [0u64; 3];
+            for (i, &byte) in s.as_bytes().iter().enumerate() {
+                let value = (byte - b'a' + 1) as u64;
+                let word_index = i / 10;
+                let bit_offset = (i % 10) * 6;
+                word[word_index] |= value << bit_offset;
+            }
+            Word(word)
+        }
+    }
+
+    fn pack_dict(dict: &[String]) -> Vec<Word> {
+        dict.iter().map(|s| Word::new(s)).collect()
+    }
+
+    fn dist(w1: &Word, w2: &Word) -> isize {
+        let mut distance = 0;
+        for i in 0..3 {
+            let x = w1.0[i] ^ w2.0[i];
+            let y = x.wrapping_add(ADD_CONST);
+            let mask = y & MASK_CONST;
+            distance += mask.count_ones() as isize;
+        }
+        distance
+    }
+
     pub fn mean_dists_dict(dict: &[String]) -> Vec<f64> {
-        todo!()
+        let pdict = pack_dict(dict);
+        let n = pdict.len();
+        let mut totals: Vec<isize> = vec![0; n];
+
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let d = dist(&pdict[i], &pdict[j]);
+                totals[i] += d;
+                totals[j] += d;
+            }
+        }
+
+        totals.iter().map(|t| *t as f64 / n as f64).collect()
+    }
+
+    // Leaving these tests in since easeier to deal with Module permissions
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+        use crate::hamming::basic_str;
+
+        #[test]
+        fn test_dist_matches_basic_str() {
+            let pairs = [
+                ("tree", "true"),
+                ("true", "truth"),
+                ("aa", "aaaaa"),
+                ("aaaaa", "aa"),
+                ("test", "tilt"),
+                ("hello", "hello"),
+                ("cat", "dog"),
+                ("abcdefghij", "abcdefghij"),
+                ("abcdefghijk", "abcdefghijz"),
+                ("", "a"),
+            ];
+
+            for (a, b) in pairs {
+                let wa = Word::new(a);
+                let wb = Word::new(b);
+                let packed_dist = dist(&wa, &wb);
+                let expected = basic_str::dist(a, b);
+                assert_eq!(
+                    packed_dist, expected,
+                    "mismatch for ({a:?}, {b:?}): packed={packed_dist}, expected={expected}"
+                );
+            }
+        }
+
+        #[test]
+        fn test_mean_dists_matches_basic_str() {
+            let dict: Vec<String> = vec!["cat", "car", "bat", "dog"]
+                .into_iter()
+                .map(String::from)
+                .collect();
+
+            let optimized_means = mean_dists_dict(&dict);
+            let basic_means = basic_str::mean_dists_dict(&dict);
+
+            for (a, b) in optimized_means.iter().zip(basic_means.iter()) {
+                assert!(
+                    (a - b).abs() < 1e-9,
+                    "mismatch: optimized={a}, basic={b}"
+                );
+            }
+        }
     }
 }
 
@@ -226,4 +346,5 @@ mod test {
     }
 
     // TODO: Add your own module tests!
+    // Added them above ^-^
 }

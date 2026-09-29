@@ -9,8 +9,8 @@ You should complete the following questions in your final submission:
    `release` mode?
 
 Using the naive implementation, the computation time for `popular.txt` was:
-Debug: 97.746620311 seconds
-Release: 4.13882222 seconds
+Debug: 99.316334992 seconds
+Release: 3.822227307 seconds
 
 2. Based on the relative sizes of the dictionaries, estimate how long
    you think it would take to run in the two modes for the
@@ -21,9 +21,9 @@ The `popular.txt` dictionary contains 25,322 words, while `enable1.txt` contains
 
 Based on the `popular.txt` runtimes, my estimated runtimes for `enable1.txt` were:
 
-- Estimated debug runtime: 97.746620311 × 46.7 ≈ 4,565.2 seconds
-- Estimated release runtime: 4.13882222 × 46.7 ≈ 193.3 seconds
-- Actual release runtime: 215.616952767 seconds
+- Estimated debug runtime: 99.316334992 × 46.7 ≈ 4,638.1 seconds
+- Estimated release runtime: 3.822227307 × 46.7 ≈ 178.5 seconds
+- Actual release runtime: 197.674267333 seconds
 
 
 ## Step 1: Blocking
@@ -52,29 +52,47 @@ For `enable1.txt`:
    do you see?
 
    Using the blocked implementation (BSIZE = 500) on `popular.txt` in release mode:
-   Naive:   214.525513361 seconds
-   Blocked: 149.200662908 seconds
+   Naive:   3.822227307 seconds
+   Blocked: 2.976012848 seconds
 
-   This is about a 30% speedup. Blocking helps because it keeps a small part of the dictionary in the cache while it is being reused, instead of going through the entire array each time. The improvement is not huge because blocking only changes the order we access the `String` data. Each `dist()` call still has to follow a pointer to find the actual characters stored elsewhere in memory where blocking does not make those characters stored closer together.
+   This is about a 22% speedup. Blocking helps because it keeps a small part of the dictionary in the cache while it is being reused, instead of going through the entire array each time. The improvement is not huge because blocking only changes the order we access the `String` data. Each `dist()` call still has to follow a pointer to find the actual characters stored elsewhere in memory, where blocking does not make those characters stored closer together.
 
 ## Step 2: Removing indirection
 
 1. What is the speed difference compared to the method in step 2?
 
-Step 2 was faster than Step 1 on both dictionaries. For `popular.txt`, the runtime decreased from 2.63 seconds to 1.00 second, giving a 2.63× speedup (61.92% faster). For `enable1.txt`, the runtime decreased from 149.56 seconds to 46.33 seconds, giving a 3.23× speedup (69.02% faster).
+The results were mixed. For `popular.txt`, packing was actually about 20% slower than blocking (3.567 seconds vs. 2.976 seconds). However, for `enable1.txt`, packing was about 9.3% faster than naive (179.225 seconds vs. 197.674 seconds). This is likely because `popular.txt` is relatively small (under 1 MB), so it already fits well in cache and blocking works efficiently. Meanwhile, `enable1.txt` is much larger (about 5.7 MB), so removing the extra pointer lookups through packing makes a bigger difference.
 
 2. The longest word in `enable1.txt` is 28 characters, but most are
    shorter.  If you write your code to reserve one byte for the word
    length at the beginning, what type of performance improvement do
    you see?
-Reserving one byte for the word length did not improve performance in our implementation. For popular.txt, the runtime increased from 1.00 seconds to 3.62 seconds, making it about 3.61× slower. For enable1.txt, the runtime increased from 46.33 seconds to 181.57 seconds, making it about 3.92× slower. Thus, the length byte resulted in a performance decrease rather than an improvement.
+Surprisingly, adding a length byte actually made the program much slower. For `popular.txt`, the runtime increased from 0.992 seconds to 3.567 seconds, making it about 3.6x slower. Similarly, for `enable1.txt`, it increased from 46.318 seconds to 179.225 seconds, making it about 3.87x slower.
+
+This is likely because the compiler can optimize a loop with a fixed size much better, such as by unrolling it. However, when the loop length depends on a value determined at runtime, the compiler has fewer opportunities to optimize it. So even though adding a length byte means we compare fewer characters on average, the loss in compiler optimization ends up making the program slower overall.
 
 ## Step 3: Packed representation
 
 What do you see?  Is your version any faster than the
 method you explored in Step 2?
 
+SWAR gave mixed results compared to our Step 2 implementation (the length-byte `basic_word`). For `popular.txt`, SWAR was about 3% slower (3.669 seconds vs. 3.567 seconds). However, for `enable1.txt`, SWAR was about 4.4% faster (171.284 seconds vs. 179.225 seconds). Overall, neither difference was very significant.
+
+This makes sense because even though SWAR lets us process multiple characters at once, it also requires extra operations like XOR, addition, masking, and `count_ones`. Our `dist()` function also still loops through all 6 packed words individually, rather than processing them all in parallel. So while packing reduces the number of iterations, the extra arithmetic seems to cancel out most of the performance improvement. This shows that bit-level optimizations do not always lead to faster code.
+
 ## Step 4: Speed demon
 
 Describe the steps that you took to get to your final optimized
 version!
+
+Starting from our Step 3 SWAR implementation, we made two main changes:
+
+1. **Used symmetry to reduce comparisons.** Since `dist(w1, w2) == dist(w2, w1)` and `dist(w, w) == 0`, we only need to calculate each pair of words once. Instead of comparing every word against every other word, we only compute the upper triangle of the distance matrix and add the result to both words' totals. This reduces the number of `dist()` calls by roughly half.
+
+2. **Packed 10 characters into a `u64` instead of 5 into a `u32`.** Our original SWAR implementation used 6 bits per character, meaning we needed 6 packed words to store a 28-character string. By switching to `u64`, we can fit 10 characters per word, reducing the number of packed words from 6 to 3. This means fewer XOR, addition, masking, and `count_ones()` operations per comparison.
+
+We also used a `const fn` to generate the add and mask constants instead of manually extending the original 32-bit constants, since simply doubling them would misalign the bits. To make sure everything still worked correctly, we tested our packed `dist()` against `basic_str::dist()` using several word pairs, including one that crosses the 10-character boundary.
+
+The results showed a pretty significant improvement. For `popular.txt`, the runtime decreased from 3.669 seconds to 1.033 seconds, making it about 3.55x faster. Similarly, for `enable1.txt`, it decreased from 171.284 seconds to 48.340 seconds, making it about 3.54x faster.
+
+Overall, both dictionaries saw roughly a 3.5x speedup. This makes sense because we reduced the number of comparisons through symmetry while also cutting the number of packed-word operations per comparison in half.
