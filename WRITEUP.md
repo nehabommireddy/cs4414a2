@@ -61,12 +61,15 @@ For `enable1.txt`:
 
 1. What is the speed difference compared to the method in step 2?
 
-The results were mixed. For `popular.txt`, packing was actually about 20% slower than blocking (3.567 seconds vs. 2.976 seconds). However, for `enable1.txt`, packing was about 9.3% faster than naive (179.225 seconds vs. 197.674 seconds). This is likely because `popular.txt` is relatively small (under 1 MB), so it already fits well in cache and blocking works efficiently. Meanwhile, `enable1.txt` is much larger (about 5.7 MB), so removing the extra pointer lookups through packing makes a bigger difference.
+Packing was faster than blocking for both dictionaries. For `popular.txt`, the runtime decreased from 2.976 seconds to 0.997 seconds, making it about 2.98x faster (66.5% reduction in runtime). Similarly, for `enable1.txt`, it decreased from 195.241 seconds to 46.522 seconds, making it about 4.20x faster (76.2% reduction in runtime).
+
+Overall, packing gave a much bigger improvement than blocking. This is likely because packing removes the extra pointer lookups needed to access a `String`'s heap-allocated data. It also gives the compiler a fixed loop size (`0..WSIZE`), allowing it to optimize the loop more efficiently through unrolling and vectorization. Blocking alone does not provide these same benefits.
 
 2. The longest word in `enable1.txt` is 28 characters, but most are
    shorter.  If you write your code to reserve one byte for the word
    length at the beginning, what type of performance improvement do
    you see?
+
 Surprisingly, adding a length byte actually made the program much slower. For `popular.txt`, the runtime increased from 0.992 seconds to 3.567 seconds, making it about 3.6x slower. Similarly, for `enable1.txt`, it increased from 46.318 seconds to 179.225 seconds, making it about 3.87x slower.
 
 This is likely because the compiler can optimize a loop with a fixed size much better, such as by unrolling it. However, when the loop length depends on a value determined at runtime, the compiler has fewer opportunities to optimize it. So even though adding a length byte means we compare fewer characters on average, the loss in compiler optimization ends up making the program slower overall.
@@ -76,9 +79,9 @@ This is likely because the compiler can optimize a loop with a fixed size much b
 What do you see?  Is your version any faster than the
 method you explored in Step 2?
 
-SWAR gave mixed results compared to our Step 2 implementation (the length-byte `basic_word`). For `popular.txt`, SWAR was about 3% slower (3.669 seconds vs. 3.567 seconds). However, for `enable1.txt`, SWAR was about 4.4% faster (171.284 seconds vs. 179.225 seconds). Overall, neither difference was very significant.
+SWAR was significantly slower than our Step 2 implementation for both dictionaries. For `popular.txt`, SWAR took 3.669 seconds compared to 0.997 seconds for Step 2, making it about 3.68x slower. Similarly, for `enable1.txt`, SWAR took 171.284 seconds compared to 46.522 seconds, also making it about 3.68x slower. This is likely because our Step 2 implementation uses a fixed loop size (`0..WSIZE`), which the compiler can optimize efficiently through unrolling and vectorization. Although SWAR also uses a fixed loop size (`0..6`) and processes multiple characters at once, each iteration requires extra operations like XOR, addition, masking, and `count_ones()`. These extra operations seem to outweigh the benefit of having fewer iterations.
 
-This makes sense because even though SWAR lets us process multiple characters at once, it also requires extra operations like XOR, addition, masking, and `count_ones`. Our `dist()` function also still loops through all 6 packed words individually, rather than processing them all in parallel. So while packing reduces the number of iterations, the extra arithmetic seems to cancel out most of the performance improvement. This shows that bit-level optimizations do not always lead to faster code.
+Overall, this shows that a more complicated implementation does not necessarily mean better performance, especially when the compiler can already optimize a simpler approach really well.
 
 ## Step 4: Speed demon
 
